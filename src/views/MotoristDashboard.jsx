@@ -169,9 +169,9 @@ export default function MasterDashboardView() {
               )}
             </div>
             {history.length > 5 && (
-               <div className="bg-slate-50 p-3 text-center border-t border-slate-100">
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">+ {history.length - 5} Older Records Hidden</p>
-               </div>
+              <div className="bg-slate-50 p-3 text-center border-t border-slate-100">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">+ {history.length - 5} Older Records Hidden</p>
+              </div>
             )}
           </div>
 
