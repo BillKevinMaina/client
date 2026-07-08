@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../config/firebaseConfig';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useApp } from '../context/AppContext';
-import ChatWindow from '../components/ChatWindow'; // 🚨 IMPORTED THE CHAT WINDOW
+import ChatWindow from '../components/ChatWindow';
 
 export default function LiveTrackingView() {
   const navigate = useNavigate();
@@ -11,8 +11,6 @@ export default function LiveTrackingView() {
   
   const [liveStatus, setLiveStatus] = useState('pending');
   const [mechanicData, setMechanicData] = useState(null);
-  
-  // 🚨 State to control if the chat window is visible
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
@@ -25,6 +23,7 @@ export default function LiveTrackingView() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setLiveStatus(data.status); 
+        
         if (data.status === 'accepted') {
           setMechanicData({
             name: data.mechanicName,
@@ -43,6 +42,8 @@ export default function LiveTrackingView() {
       <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:20px_20px] opacity-20"></div>
 
       <div className="max-w-md w-full relative z-10 flex flex-col items-center">
+        
+        {/* 1. PENDING STATE */}
         {liveStatus === 'pending' && (
           <div className="text-center w-full flex flex-col items-center">
             <div className="relative w-48 h-48 mb-12 flex items-center justify-center">
@@ -63,6 +64,7 @@ export default function LiveTrackingView() {
           </div>
         )}
 
+        {/* 2. ACCEPTED STATE */}
         {liveStatus === 'accepted' && (
           <div className="text-center w-full flex flex-col items-center animate-fade-in-up">
             <div className="relative w-40 h-40 mb-8 flex items-center justify-center">
@@ -99,8 +101,6 @@ export default function LiveTrackingView() {
                 <a href={`tel:${mechanicData?.phone}`} className="py-3 rounded-xl bg-slate-700 text-white font-bold text-xs uppercase tracking-wider hover:bg-slate-600 transition-colors flex justify-center items-center gap-2">
                   📞 Call
                 </a>
-                
-                {/* 🚨 THE CHAT BUTTON TRIGGERS THE WINDOW */}
                 <button onClick={() => setIsChatOpen(true)} className="py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase tracking-wider hover:bg-red-700 transition-colors flex justify-center items-center gap-2 shadow-lg shadow-red-600/20">
                   💬 Live Chat
                 </button>
@@ -108,9 +108,30 @@ export default function LiveTrackingView() {
             </div>
           </div>
         )}
+
+        {/* 🚨 3. THE NEW RESOLVED STATE 🚨 */}
+        {liveStatus === 'resolved' && (
+          <div className="text-center w-full flex flex-col items-center animate-fade-in-up">
+            <div className="relative w-40 h-40 mb-8 flex items-center justify-center">
+              <div className="absolute inset-0 bg-blue-500/20 rounded-full animate-pulse blur-xl"></div>
+              <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center text-4xl text-white shadow-[0_0_40px_rgba(59,130,246,0.8)]">🏁</div>
+            </div>
+
+            <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-6">Service Completed</span>
+            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-2">You're good to go!</h2>
+            <p className="text-slate-400 text-sm mb-10">Your technician has securely closed this dispatch ticket.</p>
+
+            {/* A hard refresh link (window.location) safely wipes the Context memory */}
+            <button 
+              onClick={() => window.location.href = '/motorist-home'}
+              className="w-full py-4 rounded-xl bg-blue-600 text-white font-black text-sm uppercase tracking-wider hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+            >
+              Return to Home Map
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* 🚨 RENDER THE CHAT WINDOW IF TRUE */}
       {isChatOpen && activeIncident && (
         <ChatWindow incidentId={activeIncident.id} onClose={() => setIsChatOpen(false)} />
       )}

@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import ProtectedRoute from './components/ProtectedRoute';
-
+import AdminRoute from './components/AdminRoute'; // 🚨 NEW: Security Guard for Admin
 
 // Views
 import AuthView from './views/AuthView';
@@ -14,6 +14,7 @@ import MechanicProfileSetupView from './views/MechanicProfileSetupView';
 import MechanicDashboardView from './views/MechanicDashboardView';
 import MechanicRoutingView from './views/MechanicRoutingView';
 import ProfileView from './views/ProfileView';
+import SuperAdminView from './views/SuperAdminView'; 
 
 export default function App() {
   return (
@@ -21,8 +22,13 @@ export default function App() {
       <Router>
         <div className="App w-full h-[100dvh] overflow-hidden bg-slate-900">
           <Routes>
-            {/* PUBLIC ROUTE - Anyone can see the login screen */}
+            {/* LANDING PAGE - Root URL now forces the Login/Auth screen */}
             <Route path="/" element={<AuthView />} />
+            
+            {/* ADMIN ROUTE - Guarded by AdminRoute security check */}
+            <Route path="/super-admin" element={
+              <AdminRoute><SuperAdminView /></AdminRoute>
+            } />
             
             {/* PROTECTED MOTORIST ROUTES */}
             <Route path="/motorist-home" element={
