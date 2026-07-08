@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth, db } from '../config/firebaseConfig'; 
-import { onAuthStateChanged, signOut } from 'firebase/auth'; // 🚨 NEW: Imported signOut
+import { onAuthStateChanged, signOut } from 'firebase/auth'; 
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore'; 
 
 export const AppContext = createContext();
@@ -19,11 +19,10 @@ export const AppProvider = ({ children }) => {
     return unsubscribe; 
   }, []);
 
-  // 🚨 NEW: The Secure Logout Function
   const logout = async () => {
     try {
       await signOut(auth);
-      setActiveIncident(null); // Clear any active jobs from local memory
+      setActiveIncident(null); 
     } catch (error) {
       console.error("Firebase Logout Error:", error);
     }
@@ -34,6 +33,7 @@ export const AppProvider = ({ children }) => {
     try {
       const docRef = await addDoc(collection(db, 'incidents'), {
         ...payload,
+        motoristId: currentUser?.uid, // 🚨 THE FIX: Invisibly stamp the user's ID on the job!
         status: 'pending',
         timestamp: new Date().toISOString()
       });
@@ -54,7 +54,6 @@ export const AppProvider = ({ children }) => {
   // 2. UPDATE STATUS
   const updateIncidentStatus = async (status) => {
     if (!activeIncident?.id) return;
-    
     try {
       const incidentRef = doc(db, 'incidents', activeIncident.id);
       await updateDoc(incidentRef, { status: status });
@@ -81,7 +80,7 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{ 
       currentUser, setCurrentUser, authLoading,
       activeIncident, createIncidentPayload, updateIncidentStatus, clearIncident,
-      logout // 🚨 NEW: Made available to the rest of the app!
+      logout 
     }}>
       {!authLoading && children}
     </AppContext.Provider>
