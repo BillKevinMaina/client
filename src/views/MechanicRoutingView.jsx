@@ -1,75 +1,118 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { db } from '../config/firebaseConfig';
+import { doc, updateDoc } from 'firebase/firestore';
+import ChatWindow from '../components/ChatWindow'; // 🚨 IMPORTED THE CHAT WINDOW
 
 export default function MechanicRoutingView() {
   const navigate = useNavigate();
-  const { activeIncident, clearIncident } = useApp();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const { currentUser } = useApp();
+  
+  const targetIncident = location.state?.targetIncident || {};
+  const [isCompleting, setIsCompleting] = useState(false);
+  
+  // 🚨 State to control if the chat window is visible
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
-  const displayIncident = activeIncident || {
-    id: "REQ-990812", motoristName: "Alex Maina", carModel: "2019 Honda Fit Hybrid", location: "Mombasa Road", distance: "1.2 km away"
+  const mechanicName = currentUser?.displayName || 'Verified Mechanic';
+  const mechanicInitials = mechanicName.substring(0, 2).toUpperCase();
+  const incidentRef = targetIncident.id || 'REQ-PENDING';
+  const motoristPhone = targetIncident.motoristPhone || '';
+  const motoristName = targetIncident.motoristName || 'Motorist';
+
+  const handleCompleteJob = async () => {
+    if (!targetIncident.id) return;
+    setIsCompleting(true);
+    try {
+      const incidentDoc = doc(db, 'incidents', targetIncident.id);
+      await updateDoc(incidentDoc, { status: 'resolved' });
+      navigate('/mechanic-dashboard', { replace: true });
+    } catch (error) {
+      console.error("Failed to complete job:", error);
+      alert(`Error completing the job: ${error.message}`);
+      setIsCompleting(false);
+    }
   };
 
-  const handleJobCompletion = () => {
-    alert(`Service record ${displayIncident.id} resolved.`);
-    clearIncident();
-    navigate('/mechanic-dashboard');
+  const handleContactMotorist = (e) => {
+    if (!motoristPhone || motoristPhone === 'No Phone') {
+      e.preventDefault();
+      alert("The motorist did not provide a valid emergency contact number.");
+    }
   };
 
   return (
-    <div className="w-full h-[100dvh] bg-white flex flex-col md:flex-row overflow-hidden antialiased relative">
+    <div className="w-full h-screen bg-slate-100 flex font-sans antialiased relative">
       
-      {/* QUICK ACCESS MENU */}
-      <div className="absolute top-4 left-4 z-40">
-        <button onClick={() => setIsMenuOpen(true)} className="bg-slate-900 text-white p-3 rounded-xl shadow-lg font-bold text-sm">☰ Menu</button>
-      </div>
+      {/* LEFT SIDEBAR */}
+      <div className="w-80 bg-white shadow-2xl flex flex-col p-8 z-10 shrink-0 border-r border-slate-200">
+        <h2 className="text-xl font-black text-slate-900 mt-4 mb-8 tracking-tight">ACTIVE DISPATCH</h2>
 
-      {isMenuOpen && (
-        <div className="absolute inset-0 z-50 flex">
-          <div onClick={() => setIsMenuOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-          <div className="relative w-64 bg-slate-900 text-white h-full shadow-2xl flex flex-col p-5 border-r border-slate-800">
-            <div className="flex justify-between items-center pb-5 border-b border-slate-800 mb-5">
-              <span className="text-sm font-black text-amber-500 uppercase">Pro Terminal</span>
-              <button onClick={() => setIsMenuOpen(false)} className="text-slate-400 text-lg font-bold">✕</button>
-            </div>
-            <nav className="space-y-2 text-sm font-bold flex-1">
-              <button onClick={() => navigate('/mechanic-dashboard')} className="w-full text-left p-3 rounded-xl text-slate-300 hover:bg-slate-800 transition-all">🎛️ Live Radar</button>
-              <button onClick={() => navigate('/mechanic-routing')} className="w-full text-left p-3 rounded-xl bg-slate-800 text-white transition-all">🗺️ Active Routing</button>
-              <button onClick={() => navigate('/mechanic-setup')} className="w-full text-left p-3 rounded-xl text-slate-300 hover:bg-slate-800 transition-all">⚙️ Profile Setup</button>
-            </nav>
-            <div className="border-t border-slate-800 pt-4">
-              <button onClick={() => navigate('/')} className="w-full text-left p-3 rounded-xl text-red-400 hover:bg-red-900/30 transition-all">🚪 Logout</button>
-            </div>
+        <div className="flex items-center gap-4 mb-8 pb-8 border-b border-slate-100">
+          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-700 font-black flex items-center justify-center text-lg shrink-0">
+            {mechanicInitials}
+          </div>
+          <div className="overflow-hidden">
+            <span className="bg-slate-100 text-slate-600 text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider">
+              {incidentRef}
+            </span>
+            <p className="font-bold text-slate-900 mt-1 truncate">{mechanicName}</p>
           </div>
         </div>
+
+        <div className="mt-auto space-y-4">
+          
+          {/* 🚨 UPDATED: Call & Chat Grid */}
+          <div className="grid grid-cols-2 gap-3 w-full">
+            <a
+              href={`tel:${motoristPhone}`}
+              onClick={handleContactMotorist}
+              className="py-4 rounded-xl bg-slate-100 text-slate-700 font-black text-xs uppercase tracking-wider flex justify-center items-center gap-2 hover:bg-slate-200 transition-colors"
+            >
+              📞 Call
+            </a>
+            
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="py-4 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-wider flex justify-center items-center gap-2 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
+            >
+              💬 Chat
+            </button>
+          </div>
+
+          <button
+            onClick={handleCompleteJob}
+            disabled={isCompleting}
+            className="w-full py-4 rounded-xl bg-red-600 text-white font-black text-xs uppercase tracking-wider flex justify-center items-center hover:bg-red-700 transition-colors shadow-lg shadow-red-200 mt-4"
+          >
+            {isCompleting ? 'Finalizing Record...' : 'Complete Job ✓'}
+          </button>
+        </div>
+      </div>
+
+      {/* RIGHT MAP AREA */}
+      <div className="flex-1 relative bg-slate-200 overflow-hidden" style={{ backgroundImage: 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)', backgroundSize: '30px 30px' }}>
+         <div className="absolute top-2/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+            <div className="w-4 h-4 bg-blue-500 border-4 border-white rounded-full shadow-lg"></div>
+            <div className="mt-2 bg-slate-600 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded shadow-md">
+                Target: {motoristName}
+            </div>
+         </div>
+         
+         <div className="absolute top-1/3 left-2/3 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+            <div className="bg-red-600 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded shadow-md mb-1 flex items-center gap-1 shadow-red-500/30">
+                🚗 Transit Route
+            </div>
+            <div className="w-3 h-3 bg-red-600 border-2 border-white rounded-full shadow-lg animate-pulse"></div>
+         </div>
+      </div>
+
+      {/* 🚨 RENDER THE CHAT WINDOW IF TRUE */}
+      {isChatOpen && targetIncident.id && (
+        <ChatWindow incidentId={targetIncident.id} onClose={() => setIsChatOpen(false)} />
       )}
-
-      <div className="flex-1 md:flex-[2] lg:flex-[3] bg-slate-200 relative md:order-2 overflow-hidden" style={{ backgroundImage: 'radial-gradient(#94a3b8 1.5px, transparent 1.5px)', backgroundSize: '20px 20px' }}>
-        <div className="absolute top-[60%] left-[45%] z-10 text-center animate-pulse">
-          <div className="w-4 h-4 bg-blue-600 rounded-full border-4 border-white mx-auto"></div>
-          <div className="mt-1 bg-slate-900 text-white text-[9px] font-black uppercase px-2 py-1 rounded">Target: {displayIncident.motoristName}</div>
-        </div>
-        <div className="absolute top-[35%] left-[50%] z-10 text-center">
-          <div className="bg-red-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded flex items-center gap-1"><span>🏍️</span> Transit Route</div>
-          <div className="w-3 h-3 bg-red-600 rounded-full border-2 border-white mx-auto -mt-1"></div>
-        </div>
-      </div>
-
-      <div className="bg-white p-5 md:p-8 border-t md:border-t-0 md:border-r border-slate-100 relative z-20 shrink-0 space-y-6 md:w-[380px] lg:w-[450px] md:order-1 flex flex-col justify-center overflow-y-auto">
-        <div className="hidden md:block">
-          <h2 className="text-2xl font-black text-slate-900 uppercase">Active Dispatch</h2>
-        </div>
-        <div className="flex items-center gap-4 border-b border-slate-50 pb-5">
-          <div className="w-12 h-12 bg-slate-50 text-slate-700 rounded-full flex justify-center items-center font-black">{displayIncident.motoristName.substring(0,2).toUpperCase()}</div>
-          <div className="flex-1">
-            <span className="text-[10px] font-black bg-slate-100 px-2 py-1 rounded font-mono">{displayIncident.id}</span>
-            <h4 className="text-base font-black mt-1">{displayIncident.motoristName}</h4>
-          </div>
-        </div>
-        <a href="tel:0712345678" className="w-full bg-emerald-50 text-emerald-600 py-4 rounded-xl text-sm font-black uppercase flex justify-center items-center">📞 Contact Motorist</a>
-        <button onClick={handleJobCompletion} className="w-full bg-red-600 text-white font-black text-sm uppercase py-4 rounded-xl shadow-lg">Complete Job ✓</button>
-      </div>
     </div>
   );
 }

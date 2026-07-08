@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
+
 // Views
 import AuthView from './views/AuthView';
 import MotoristHomeView from './views/MotoristHomeView';
@@ -12,6 +13,7 @@ import LiveTrackingView from './views/LiveTrackingView';
 import MechanicProfileSetupView from './views/MechanicProfileSetupView';
 import MechanicDashboardView from './views/MechanicDashboardView';
 import MechanicRoutingView from './views/MechanicRoutingView';
+import ProfileView from './views/ProfileView';
 
 export default function App() {
   return (
@@ -45,6 +47,9 @@ export default function App() {
             } />
             <Route path="/mechanic-routing" element={
               <ProtectedRoute><MechanicRoutingView /></ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute><ProfileView /></ProtectedRoute>
             } />
           </Routes>
         </div>

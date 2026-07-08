@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext'; // 🚨 NEW: Imported context to check auth status
 import { auth, db } from '../config/firebaseConfig';
 import { 
   createUserWithEmailAndPassword, 
@@ -11,6 +12,8 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function AuthView() {
   const navigate = useNavigate();
+  const { currentUser } = useApp(); // 🚨 NEW: Pulling the current user session
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,13 +24,25 @@ export default function AuthView() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // 🚨 FIX 1: Added { replace: true } to wipe the login page from browser history
   const routeUser = (selectedRole) => {
     if (selectedRole === 'mechanic') {
-      navigate('/mechanic-dashboard');
+      navigate('/mechanic-dashboard', { replace: true });
     } else {
-      navigate('/motorist-home');
+      navigate('/motorist-home', { replace: true });
     }
   };
+
+  // 🚨 FIX 2: Auto-redirect if Firebase already remembers this user
+  useEffect(() => {
+    if (currentUser) {
+      if (role === 'mechanic') {
+        navigate('/mechanic-dashboard', { replace: true });
+      } else {
+        navigate('/motorist-home', { replace: true });
+      }
+    }
+  }, [currentUser, navigate, role]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,7 +52,6 @@ export default function AuthView() {
     try {
       if (isLogin) {
         // --- LOGIN FLOW ---
-        // Authenticate the email/password, then instantly route based on the UI toggle
         await signInWithEmailAndPassword(auth, email, password);
         routeUser(role); 
         
@@ -119,7 +133,7 @@ export default function AuthView() {
               <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:border-red-500 transition-all" />
             </div>
 
-            {/* ROLE SELECTOR: Now visible for both Login and Registration */}
+            {/* ROLE SELECTOR */}
             <div className="pt-1">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
                 Log in as:

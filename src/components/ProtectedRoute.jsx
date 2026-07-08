@@ -6,11 +6,12 @@ import { useApp } from '../context/AppContext';
 export default function ProtectedRoute({ children }) {
   const { currentUser } = useApp();
 
-  // If no user is detected by Firebase, kick them to the login screen ("/")
+  // If Firebase checks its records and confirms no one is logged in...
   if (!currentUser) {
+    // ...kick the user back to the login page immediately!
     return <Navigate to="/" replace />;
   }
 
-  // If they are logged in, render the page they asked for
+  // If they ARE logged in, open the gates and let them see the page.
   return children;
 }
